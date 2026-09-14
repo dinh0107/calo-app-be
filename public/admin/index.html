@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaloVision AI - Admin Portal & Analytics Dashboard</title>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            dark: {
+              900: '#090d16',
+              800: '#111827',
+              700: '#1f2937',
+              600: '#374151',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f3f4f6;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(34, 197, 94, 0.35);
+      transform: translateY(-2px);
+      transition: all 0.2s ease;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #4ade80, #22c55e, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #223046;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="sticky top-0 z-50 glass-card border-b border-white/10 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img src="/assets/logo.png" class="w-10 h-10 rounded-xl object-cover shadow-lg shadow-brand-500/20" alt="CaloVision Logo">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-lg tracking-tight text-white">CaloVision</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-500/10 text-brand-400 border border-brand-500/20">ADMIN HUB</span>
+        </div>
+        <p class="text-xs text-gray-400">Hệ thống Quản trị & Thống kê Calo AI</p>
+      </div>
+    </div>
+
+    <!-- Live Status & Actions -->
+    <div class="flex items-center gap-4">
+      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>Server Port 5001 • Real-time</span>
+      </div>
+
+      <button onclick="cleanAllData()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold transition">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+        <span>Xóa Sạch Dữ Liệu</span>
+      </button>
+
+      <button onclick="refreshAllData()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-medium transition">
+        <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+        <span>Làm mới</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <div class="flex-1 flex flex-col md:flex-row max-w-[1600px] w-full mx-auto p-4 md:p-6 gap-6">
+
+    <!-- SIDEBAR TABS -->
+    <aside class="w-full md:w-64 flex flex-row md:flex-col gap-1.5 shrink-0 overflow-x-auto pb-2 md:pb-0">
+      <button onclick="switchTab('overview')" id="tab-btn-overview" class="tab-btn active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition bg-brand-500 text-black shadow-lg shadow-brand-500/20">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        <span>📊 Tổng quan</span>
+      </button>
+      <button onclick="switchTab('users')" id="tab-btn-users" class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition">
+        <i data-lucide="users" class="w-4 h-4"></i>
+        <span>👥 Quản lý Users</span>
+        <span id="badge-users-count" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300">0</span>
+      </button>
+      <button onclick="switchTab('scans')" id="tab-btn-scans" class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <span>🍲 Món ăn đã quét</span>
+        <span id="badge-scans-count" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300">0</span>
+      </button>
+      <button onclick="switchTab('notifications')" id="tab-btn-notifications" class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition">
+        <i data-lucide="send" class="w-4 h-4"></i>
+        <span>📢 Gửi thông báo</span>
+      </button>
+
+      <div class="hidden md:block mt-auto p-4 rounded-xl glass-card border border-white/5 text-xs text-gray-400 space-y-2">
+        <div class="flex items-center justify-between font-semibold text-gray-300">
+          <span>Hệ thống Backend</span>
+          <span class="text-brand-400">100% Real Data</span>
+        </div>
+        <p class="text-[11px] leading-relaxed">Dữ liệu được cập nhật trực tiếp theo thời gian thực từ người dùng thực tế.</p>
+      </div>
+    </aside>
+
+    <!-- CONTENT PANELS -->
+    <main class="flex-1 min-w-0">
+
+      <!-- ================= TAB 1: TỔNG QUAN (OVERVIEW) ================= -->
+      <section id="panel-overview" class="space-y-6">
+        <!-- KPI Metrics Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Total Users -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-gray-400">Tổng Người Dùng</span>
+              <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                <i data-lucide="users" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="stat-total-users" class="text-3xl font-extrabold text-white">0</span>
+              <span class="text-xs font-semibold text-emerald-400">Người dùng</span>
+            </div>
+          </div>
+
+          <!-- Scanned Foods -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-gray-400">Món Ăn Đã Quét AI</span>
+              <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="stat-total-scans" class="text-3xl font-extrabold text-white">0</span>
+              <span class="text-xs font-semibold text-emerald-400">Lượt scan</span>
+            </div>
+          </div>
+
+          <!-- Total Meals Logged -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-gray-400">Nhật Ký Bữa Ăn</span>
+              <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+                <i data-lucide="utensils" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="stat-total-meals" class="text-3xl font-extrabold text-white">0</span>
+              <span class="text-xs font-semibold text-amber-400">Bữa ăn</span>
+            </div>
+          </div>
+
+          <!-- Water Today -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-gray-400">Nước Uống Hôm Nay</span>
+              <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+                <i data-lucide="droplet" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="stat-water-today" class="text-3xl font-extrabold text-white">0</span>
+              <span class="text-xs font-semibold text-cyan-400">ml</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts & Rankings Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Main Chart: Scans Trend (2 cols) -->
+          <div class="lg:col-span-2 glass-card p-5 rounded-2xl">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="trending-up" class="w-4 h-4 text-brand-400"></i>
+                  Lượt Quét Món Ăn 7 Ngày Gần Nhất
+                </h3>
+                <p class="text-xs text-gray-400">Tần suất người dùng quét hình ảnh và phân tích calo thực tế</p>
+              </div>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 font-medium">Real-time</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="scansChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Top Scanned Vietnamese Dishes (1 col) -->
+          <div class="glass-card p-5 rounded-2xl flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
+                Top Món Ăn Phổ Biến
+              </h3>
+              <span class="text-xs text-gray-400">Xếp hạng thực</span>
+            </div>
+            <div id="top-dishes-list" class="space-y-3 flex-1 flex flex-col justify-center">
+              <p class="text-xs text-gray-500 text-center py-8">Chưa có dữ liệu quét món thực tế</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Activity Feed -->
+        <div class="glass-card p-5 rounded-2xl">
+          <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+            Hoạt Động Quét Món Gần Đây
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-gray-400 border-b border-white/10 uppercase">
+                <tr>
+                  <th class="py-2.5 px-3">Món ăn</th>
+                  <th class="py-2.5 px-3">Bữa</th>
+                  <th class="py-2.5 px-3">Calo</th>
+                  <th class="py-2.5 px-3">Độ tin cậy</th>
+                  <th class="py-2.5 px-3">Người quét</th>
+                  <th class="py-2.5 px-3">Thời gian</th>
+                </tr>
+              </thead>
+              <tbody id="recent-scans-tbody" class="divide-y divide-white/5 text-gray-300">
+                <tr><td colspan="6" class="text-center py-6 text-gray-500">Chưa có hoạt động quét món nào từ người dùng</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: QUẢN LÝ USERS ================= -->
+      <section id="panel-users" class="hidden space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+              Danh Sách Người Dùng Thực Tế
+            </h2>
+            <p class="text-xs text-gray-400">Quản lý tài khoản, chỉ số sức khỏe & mục tiêu calo</p>
+          </div>
+          <div class="relative w-full sm:w-72">
+            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="user-search-input" onkeyup="filterUsers()" placeholder="Tìm kiếm theo tên, email..." class="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition">
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-gray-400 border-b border-white/10 uppercase bg-white/[0.02]">
+                <tr>
+                  <th class="py-3 px-4">Người dùng</th>
+                  <th class="py-3 px-4">Thể trạng</th>
+                  <th class="py-3 px-4">Mục tiêu Calo</th>
+                  <th class="py-3 px-4">Lượt Scan</th>
+                  <th class="py-3 px-4">Số Bữa Ăn</th>
+                  <th class="py-3 px-4">Lần cuối</th>
+                  <th class="py-3 px-4 text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-tbody" class="divide-y divide-white/5 text-gray-300">
+                <tr><td colspan="7" class="text-center py-8 text-gray-500">Chưa có người dùng nào đăng ký</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: MÓN ĂN ĐÃ QUÉT ================= -->
+      <section id="panel-scans" class="hidden space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-5 h-5 text-emerald-400"></i>
+              Nhật Ký Quét Món Ăn AI
+            </h2>
+            <p class="text-xs text-gray-400">Thư viện nhận diện hình ảnh, dinh dưỡng & điểm sức khỏe</p>
+          </div>
+          <div class="relative w-full sm:w-72">
+            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="scan-search-input" onkeyup="filterScans()" placeholder="Tìm tên món ăn..." class="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition">
+          </div>
+        </div>
+
+        <div id="scans-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="col-span-3 text-center py-12 text-gray-500 glass-card rounded-2xl">Chưa có món ăn nào được người dùng quét AI</div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: GỬI THÔNG BÁO (NOTIFICATIONS) ================= -->
+      <section id="panel-notifications" class="hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="send" class="w-5 h-5 text-brand-400"></i>
+            Trung Tâm Gửi Thông Báo (Broadcast Center)
+          </h2>
+          <p class="text-xs text-gray-400">Gửi thông báo Push & In-app Banner trực tiếp đến điện thoại người dùng</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 glass-card p-6 rounded-2xl space-y-4">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider text-gray-300">Soạn Thông Báo Mới</h3>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-300 mb-1.5">Đối tượng nhận</label>
+              <select id="notif-recipient" class="w-full px-3.5 py-2.5 bg-dark-800 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500">
+                <option value="all">📢 Tất cả người dùng (Toàn hệ thống)</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1.5">Loại thông báo</label>
+                <select id="notif-type" onchange="updatePreview()" class="w-full px-3.5 py-2.5 bg-dark-800 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500">
+                  <option value="water">💧 Nhắc uống nước</option>
+                  <option value="meal">🥗 Gợi ý bữa ăn & Dinh dưỡng</option>
+                  <option value="promo">⚡ Động lực & Khuyến khích</option>
+                  <option value="info">ℹ️ Thông tin hệ thống</option>
+                  <option value="warning">⚠️ Cảnh báo dinh dưỡng</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1.5">Mẫu thông báo</label>
+                <select onchange="applyTemplate(this.value)" class="w-full px-3.5 py-2.5 bg-dark-800 border border-white/10 rounded-xl text-xs text-emerald-400 font-medium focus:outline-none focus:border-brand-500">
+                  <option value="">-- Chọn mẫu thông báo --</option>
+                  <option value="water_reminder">💧 Nhắc nhở uống nước</option>
+                  <option value="meal_log">🥗 Nhắc ghi lại bữa ăn</option>
+                  <option value="streak_praise">🔥 Chúc mừng chuỗi ăn uống lành mạnh</option>
+                  <option value="update_app">🚀 Thông báo cập nhật hệ thống</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-300 mb-1.5">Tiêu đề thông báo</label>
+              <input type="text" id="notif-title" onkeyup="updatePreview()" placeholder="Nhập tiêu đề..." class="w-full px-3.5 py-2.5 bg-dark-800 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-300 mb-1.5">Nội dung chi tiết</label>
+              <textarea id="notif-message" onkeyup="updatePreview()" rows="3" placeholder="Nhập nội dung thông báo..." class="w-full px-3.5 py-2.5 bg-dark-800 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"></textarea>
+            </div>
+
+            <button onclick="sendNotification()" id="btn-send-notif" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 text-black font-extrabold text-sm shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transition active:scale-[0.99]">
+              <i data-lucide="send" class="w-4 h-4"></i>
+              <span>Phát Thông Báo Ngay</span>
+            </button>
+          </div>
+
+          <!-- Live Mobile Preview: 5 cols -->
+          <div class="lg:col-span-5 glass-card p-6 rounded-2xl flex flex-col items-center justify-center">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Xem trước trên Mobile (Live Preview)</span>
+            
+            <div class="w-72 rounded-[32px] p-3 bg-black border-4 border-gray-800 shadow-2xl relative">
+              <div class="w-24 h-4 bg-gray-900 rounded-full mx-auto mb-3"></div>
+
+              <div id="preview-card" class="bg-dark-800/90 border border-emerald-500/30 rounded-2xl p-3 shadow-xl space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <img src="/assets/logo.png" class="w-5 h-5 rounded-md object-cover shadow-sm">
+                    <div id="preview-icon-bg" class="w-4 h-4 rounded-md bg-brand-500/20 text-brand-400 flex items-center justify-center text-[9px]">
+                      💧
+                    </div>
+                    <span class="text-[10px] font-bold text-white tracking-tight">CaloVision</span>
+                  </div>
+                  <span class="text-[9px] text-gray-400">Vừa xong</span>
+                </div>
+                <h4 id="preview-title" class="text-[11px] font-bold text-white leading-tight">Tiêu đề thông báo</h4>
+                <p id="preview-message" class="text-[10px] text-gray-300 leading-snug line-clamp-2">Nội dung chi tiết thông báo sẽ xuất hiện ở đây...</p>
+              </div>
+
+              <div class="mt-6 space-y-2 opacity-30 pointer-events-none">
+                <div class="h-16 bg-gray-800 rounded-xl"></div>
+                <div class="h-24 bg-gray-800 rounded-xl"></div>
+              </div>
+              <div class="w-28 h-1 bg-gray-700 rounded-full mx-auto mt-6"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sent Notifications History -->
+        <div class="glass-card p-5 rounded-2xl">
+          <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-cyan-400"></i>
+            Lịch Sử Thông Báo Đã Phát
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-gray-400 border-b border-white/10 uppercase">
+                <tr>
+                  <th class="py-2.5 px-3">Loại</th>
+                  <th class="py-2.5 px-3">Tiêu đề</th>
+                  <th class="py-2.5 px-3">Nội dung</th>
+                  <th class="py-2.5 px-3">Người nhận</th>
+                  <th class="py-2.5 px-3">Thời gian</th>
+                  <th class="py-2.5 px-3 text-right">Xóa</th>
+                </tr>
+              </thead>
+              <tbody id="notifications-history-tbody" class="divide-y divide-white/5 text-gray-300">
+                <tr><td colspan="6" class="text-center py-6 text-gray-500">Chưa có thông báo nào được phát</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= TOAST POPUP ================= -->
+  <div id="admin-toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 max-w-sm glass-card border border-brand-500/40 p-4 rounded-2xl shadow-2xl flex items-center gap-3">
+    <div id="toast-icon" class="w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center shrink-0">
+      <i data-lucide="check" class="w-4 h-4"></i>
+    </div>
+    <div class="text-xs">
+      <p id="toast-title" class="font-bold text-white">Thành công</p>
+      <p id="toast-desc" class="text-gray-300 mt-0.5">Thao tác đã được thực hiện.</p>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT CONTROLLER ================= -->
+  <script>
+    let allUsers = [];
+    let allScans = [];
+    let chartInstance = null;
+
+    function showToast(title, desc, isError = false) {
+      const toast = document.getElementById('admin-toast');
+      const toastTitle = document.getElementById('toast-title');
+      const toastDesc = document.getElementById('toast-desc');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastTitle.innerText = title;
+      toastDesc.innerText = desc;
+      
+      if (isError) {
+        toastIcon.className = 'w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0';
+        toastIcon.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4"></i>';
+      } else {
+        toastIcon.className = 'w-8 h-8 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center shrink-0';
+        toastIcon.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+      }
+      lucide.createIcons();
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3500);
+    }
+
+    function switchTab(tabKey) {
+      ['overview', 'users', 'scans', 'notifications'].forEach(key => {
+        document.getElementById(`panel-${key}`).classList.toggle('hidden', key !== tabKey);
+        const btn = document.getElementById(`tab-btn-${key}`);
+        if (btn) {
+          if (key === tabKey) {
+            btn.className = 'tab-btn active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition bg-brand-500 text-black shadow-lg shadow-brand-500/20';
+          } else {
+            btn.className = 'tab-btn flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition';
+          }
+        }
+      });
+      lucide.createIcons();
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        const data = await res.json();
+        if (data.success) {
+          const m = data.data.metrics;
+          document.getElementById('stat-total-users').innerText = m.totalUsers;
+          document.getElementById('stat-total-scans').innerText = m.totalScans;
+          document.getElementById('stat-total-meals').innerText = m.totalMeals;
+          document.getElementById('stat-water-today').innerText = (m.totalWaterToday || 0).toLocaleString();
+
+          document.getElementById('badge-users-count').innerText = m.totalUsers;
+          document.getElementById('badge-scans-count').innerText = m.totalScans;
+
+          // Top Dishes
+          const topDishes = data.data.topDishes || [];
+          const topDishesContainer = document.getElementById('top-dishes-list');
+          if (topDishes.length === 0) {
+            topDishesContainer.innerHTML = '<p class="text-xs text-gray-500 text-center py-8">Chưa có dữ liệu quét món thực tế</p>';
+          } else {
+            topDishesContainer.innerHTML = topDishes.map((dish, i) => `
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-brand-500/20 transition">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-extrabold ${i === 0 ? 'bg-amber-400 text-black' : 'bg-white/10 text-gray-300'}">${i + 1}</span>
+                  <div>
+                    <p class="text-xs font-semibold text-white">${dish.name}</p>
+                    <p class="text-[10px] text-gray-400">${dish.calories} kcal</p>
+                  </div>
+                </div>
+                <span class="text-xs font-bold text-brand-400">${dish.count} lượt</span>
+              </div>
+            `).join('');
+          }
+
+          // Recent Scans
+          const recentScans = data.data.recentScans || [];
+          const scansTbody = document.getElementById('recent-scans-tbody');
+          if (recentScans.length === 0) {
+            scansTbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-500">Chưa có hoạt động quét món nào từ người dùng</td></tr>';
+          } else {
+            scansTbody.innerHTML = recentScans.map(s => `
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-2.5 px-3 font-semibold text-white flex items-center gap-2">
+                  ${s.imageUrl ? `<img src="${s.imageUrl}" class="w-7 h-7 rounded-lg object-cover border border-white/10">` : '🍲'}
+                  <span>${s.vietnameseName || s.foodName}</span>
+                </td>
+                <td class="py-2.5 px-3 capitalize text-gray-400">${s.mealType || 'Bữa chính'}</td>
+                <td class="py-2.5 px-3 font-bold text-amber-400">${s.calories} kcal</td>
+                <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">${Math.round((s.confidence || 0.95) * 100)}%</span></td>
+                <td class="py-2.5 px-3 text-gray-400">${s.user?.name || 'Khách / Ẩn danh'}</td>
+                <td class="py-2.5 px-3 text-gray-500 text-[11px]">${new Date(s.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</td>
+              </tr>
+            `).join('');
+          }
+
+          renderChart(data.data.chartData);
+        }
+      } catch (err) {
+        console.error('Error loading stats:', err);
+      }
+    }
+
+    function renderChart(chartData) {
+      const ctx = document.getElementById('scansChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+      gradient.addColorStop(0, 'rgba(34, 197, 94, 0.35)');
+      gradient.addColorStop(1, 'rgba(34, 197, 94, 0.0)');
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: 'Lượt quét thực tế',
+            data: chartData.scans,
+            borderColor: '#22c55e',
+            borderWidth: 2.5,
+            pointBackgroundColor: '#22c55e',
+            pointBorderColor: '#ffffff',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            backgroundColor: gradient,
+            tension: 0.35,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#9ca3af', font: { size: 11 } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#9ca3af', font: { size: 11 }, precision: 0 },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users');
+        const data = await res.json();
+        if (data.success) {
+          allUsers = data.data.users;
+          renderUsersTable(allUsers);
+          populateRecipientDropdown(allUsers);
+        }
+      } catch (err) {
+        console.error('Error loading users:', err);
+      }
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('users-table-tbody');
+      if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">Chưa có người dùng nào đăng ký</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => `
+        <tr class="hover:bg-white/[0.02] transition">
+          <td class="py-3 px-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-blue-500 flex items-center justify-center font-bold text-white text-xs">
+                ${(u.name || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p class="font-bold text-white text-xs">${u.name}</p>
+                <p class="text-[11px] text-gray-400">${u.email}</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-gray-300">
+            ${u.profile ? `<span>${u.profile.height} cm • ${u.profile.weight} kg</span>` : '<span class="text-gray-500">Chưa tạo hồ sơ</span>'}
+          </td>
+          <td class="py-3 px-4 font-bold text-brand-400">
+            ${u.profile ? `${u.profile.targetCalories} kcal` : '2000 kcal'}
+          </td>
+          <td class="py-3 px-4 text-emerald-400 font-semibold">${u.stats.totalScans} lần</td>
+          <td class="py-3 px-4 text-gray-300">${u.stats.totalMeals} bữa</td>
+          <td class="py-3 px-4 text-gray-400 text-[11px]">${new Date(u.lastActiveAt || u.createdAt).toLocaleDateString('vi-VN')}</td>
+          <td class="py-3 px-4 text-right">
+            <button onclick="openDirectNotif('${u.id}', '${u.name}')" class="px-2.5 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 text-[11px] font-semibold transition">
+              📢 Gửi tin
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('user-search-input').value.toLowerCase();
+      const filtered = allUsers.filter(u => 
+        u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+      );
+      renderUsersTable(filtered);
+    }
+
+    function populateRecipientDropdown(users) {
+      const select = document.getElementById('notif-recipient');
+      let html = '<option value="all">📢 Tất cả người dùng (Toàn hệ thống)</option>';
+      users.forEach(u => {
+        html += `<option value="${u.id}">👤 ${u.name} (${u.email})</option>`;
+      });
+      select.innerHTML = html;
+    }
+
+    async function loadScans() {
+      try {
+        const res = await fetch('/api/admin/scans');
+        const data = await res.json();
+        if (data.success) {
+          allScans = data.data.scans;
+          renderScansGrid(allScans);
+        }
+      } catch (err) {
+        console.error('Error loading scans:', err);
+      }
+    }
+
+    function renderScansGrid(scans) {
+      const container = document.getElementById('scans-grid-container');
+      if (!scans || scans.length === 0) {
+        container.innerHTML = '<div class="col-span-3 text-center py-12 text-gray-500 glass-card rounded-2xl">Chưa có món ăn nào được người dùng quét AI</div>';
+        return;
+      }
+
+      container.innerHTML = scans.map(s => `
+        <div class="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col">
+          <div class="h-44 bg-dark-800 relative overflow-hidden">
+            ${s.imageUrl 
+              ? `<img src="${s.imageUrl}" class="w-full h-full object-cover">`
+              : `<div class="w-full h-full flex items-center justify-center text-4xl bg-emerald-950/30">🍲</div>`
+            }
+            <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-brand-400 border border-brand-500/30 text-[10px] font-bold">
+              AI Match: ${Math.round((s.confidence || 0.95) * 100)}%
+            </div>
+            <div class="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md text-amber-400 font-extrabold text-xs">
+              🔥 ${s.calories} kcal
+            </div>
+          </div>
+          <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div>
+              <h4 class="font-bold text-white text-sm leading-tight">${s.vietnameseName || s.foodName}</h4>
+              <p class="text-[11px] text-gray-400 capitalize mt-0.5">${s.mealType || 'Bữa ăn'} • Health Score: <span class="text-emerald-400 font-semibold">${s.healthScore || 85}/100</span></p>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+              <div class="p-1 rounded-lg bg-blue-500/10 text-blue-300 font-medium">
+                P: ${s.protein}g
+              </div>
+              <div class="p-1 rounded-lg bg-amber-500/10 text-amber-300 font-medium">
+                C: ${s.carbs}g
+              </div>
+              <div class="p-1 rounded-lg bg-rose-500/10 text-rose-300 font-medium">
+                F: ${s.fat}g
+              </div>
+            </div>
+            <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-gray-400">
+              <span>Bởi: <strong class="text-gray-300">${s.user?.name || 'Khách'}</strong></span>
+              <span>${new Date(s.createdAt).toLocaleDateString('vi-VN')}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterScans() {
+      const q = document.getElementById('scan-search-input').value.toLowerCase();
+      const filtered = allScans.filter(s => 
+        (s.foodName && s.foodName.toLowerCase().includes(q)) ||
+        (s.vietnameseName && s.vietnameseName.toLowerCase().includes(q))
+      );
+      renderScansGrid(filtered);
+    }
+
+    async function loadNotifications() {
+      try {
+        const res = await fetch('/api/admin/notifications');
+        const data = await res.json();
+        if (data.success) {
+          const tbody = document.getElementById('notifications-history-tbody');
+          if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-500">Chưa có thông báo nào được phát</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = data.data.map(n => `
+            <tr class="hover:bg-white/[0.02] transition">
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                  n.type === 'water' ? 'bg-cyan-500/10 text-cyan-400' :
+                  n.type === 'meal' ? 'bg-amber-500/10 text-amber-400' :
+                  n.type === 'promo' ? 'bg-brand-500/10 text-brand-400' : 'bg-gray-500/10 text-gray-400'
+                }">${n.type}</span>
+              </td>
+              <td class="py-2.5 px-3 font-semibold text-white">${n.title}</td>
+              <td class="py-2.5 px-3 text-gray-300 max-w-xs truncate">${n.message}</td>
+              <td class="py-2.5 px-3 text-gray-400">${n.user ? n.user.name : '📢 Tất cả'}</td>
+              <td class="py-2.5 px-3 text-gray-500 text-[11px]">${new Date(n.createdAt).toLocaleDateString('vi-VN')} ${new Date(n.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</td>
+              <td class="py-2.5 px-3 text-right">
+                <button onclick="deleteNotification('${n.id}')" class="text-rose-400 hover:text-rose-300 transition">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('');
+          lucide.createIcons();
+        }
+      } catch (err) {
+        console.error('Error loading notifications:', err);
+      }
+    }
+
+    function updatePreview() {
+      const title = document.getElementById('notif-title').value || 'Tiêu đề thông báo';
+      const message = document.getElementById('notif-message').value || 'Nội dung chi tiết thông báo sẽ xuất hiện ở đây...';
+      const type = document.getElementById('notif-type').value;
+
+      document.getElementById('preview-title').innerText = title;
+      document.getElementById('preview-message').innerText = message;
+
+      const iconBg = document.getElementById('preview-icon-bg');
+      if (type === 'water') iconBg.innerText = '💧';
+      else if (type === 'meal') iconBg.innerText = '🥗';
+      else if (type === 'promo') iconBg.innerText = '🔥';
+      else if (type === 'warning') iconBg.innerText = '⚠️';
+      else iconBg.innerText = 'ℹ️';
+    }
+
+    function applyTemplate(key) {
+      if (key === 'water_reminder') {
+        document.getElementById('notif-type').value = 'water';
+        document.getElementById('notif-title').value = '💧 Nhắc nhở uống nước!';
+        document.getElementById('notif-message').value = 'Đã đến giờ nạp 250ml nước lọc để duy trì năng lượng và thanh lọc cơ thể!';
+      } else if (key === 'meal_log') {
+        document.getElementById('notif-type').value = 'meal';
+        document.getElementById('notif-title').value = '🥗 Đừng quên ghi lại bữa ăn!';
+        document.getElementById('notif-message').value = 'Chụp ảnh món ăn ngay với CaloVision AI để theo dõi chính xác lượng calo hôm nay nhé.';
+      } else if (key === 'streak_praise') {
+        document.getElementById('notif-type').value = 'promo';
+        document.getElementById('notif-title').value = '🔥 Tuyệt vời! Bạn đang làm rất tốt!';
+        document.getElementById('notif-message').value = 'Bạn đã duy trì thói quen ăn uống khoa học đều đặn. Hãy tiếp tục phát huy!';
+      } else if (key === 'update_app') {
+        document.getElementById('notif-type').value = 'info';
+        document.getElementById('notif-title').value = '🚀 Cập nhật hệ thống CaloVision';
+        document.getElementById('notif-message').value = 'Hệ thống AI nhận diện món ăn đã được nâng cấp độ chính xác và tốc độ xử lý!';
+      }
+      updatePreview();
+    }
+
+    function openDirectNotif(userId, userName) {
+      switchTab('notifications');
+      document.getElementById('notif-recipient').value = userId;
+      document.getElementById('notif-title').value = `Chào ${userName}!`;
+      document.getElementById('notif-message').value = `Hãy tiếp tục duy trì mục tiêu dinh dưỡng hôm nay nhé!`;
+      updatePreview();
+    }
+
+    async function sendNotification() {
+      const recipient = document.getElementById('notif-recipient').value;
+      const title = document.getElementById('notif-title').value;
+      const message = document.getElementById('notif-message').value;
+      const type = document.getElementById('notif-type').value;
+
+      if (!title || !message) {
+        showToast('Lỗi', 'Vui lòng nhập đầy đủ tiêu đề và nội dung', true);
+        return;
+      }
+
+      const btn = document.getElementById('btn-send-notif');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin">⏳</span> Đang gửi...';
+
+      try {
+        const res = await fetch('/api/admin/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: recipient === 'all' ? null : recipient,
+            title,
+            message,
+            type,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Thành công', data.message || 'Đã phát thông báo!');
+          document.getElementById('notif-title').value = '';
+          document.getElementById('notif-message').value = '';
+          loadNotifications();
+        } else {
+          showToast('Thất bại', data.message, true);
+        }
+      } catch (err) {
+        showToast('Lỗi', 'Không thể kết nối đến máy chủ', true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i><span>Phát Thông Báo Ngay</span>';
+        lucide.createIcons();
+      }
+    }
+
+    async function deleteNotification(id) {
+      if (!confirm('Bạn có chắc muốn xóa thông báo này?')) return;
+      try {
+        const res = await fetch(`/api/admin/notifications/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Đã xóa', 'Thông báo đã được thu hồi.');
+          loadNotifications();
+        }
+      } catch (err) {
+        showToast('Lỗi', 'Không thể xóa thông báo', true);
+      }
+    }
+
+    async function cleanAllData() {
+      if (!confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu trên database để reset về trạng thái trắng tinh không?')) return;
+      try {
+        const res = await fetch('/api/admin/clean-all', { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Đã làm sạch', 'Cơ sở dữ liệu đã được xóa trắng hoàn toàn!');
+          refreshAllData();
+        }
+      } catch (err) {
+        showToast('Lỗi', 'Không thể xóa dữ liệu', true);
+      }
+    }
+
+    function refreshAllData() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+      Promise.all([loadStats(), loadUsers(), loadScans(), loadNotifications()]).then(() => {
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin');
+          lucide.createIcons();
+        }, 500);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      refreshAllData();
+    });
+  </script>
+</body>
+</html>

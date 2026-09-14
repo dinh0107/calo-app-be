@@ -1,0 +1,160 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String?
+  name         String
+  avatarUrl    String?
+  role         String    @default("user") // "user" | "admin"
+  pushToken    String?
+  lastActiveAt DateTime  @default(now())
+  googleId     String?   @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  profile        Profile?
+  meals          Meal[]
+  waterLogs      WaterLog[]
+  reminderConfig WaterReminderConfig?
+  scannedLogs    ScannedFoodLog[]
+  notifications  Notification[]
+}
+
+model Profile {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  gender                 String   @default("male") // "male" | "female"
+  weight                 Float    @default(65.0)
+  height                 Float    @default(170.0)
+  age                    Int      @default(25)
+  activityLevel          String   @default("sedentary") // "sedentary" | "light" | "moderate" | "heavy" | "very_heavy"
+  goal                   String   @default("maintain")  // "lose_weight" | "lose_weight_fast" | "maintain" | "gain_muscle" | "gain_weight"
+  
+  targetCalories         Int      @default(2000)
+  targetProtein          Int      @default(140)
+  targetCarbs            Int      @default(220)
+  targetFat              Int      @default(60)
+  waterGoal              Int      @default(2000)
+  
+  hasCompletedOnboarding Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model Meal {
+  id            String     @id @default(uuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  mealType      String     // "breakfast" | "lunch" | "dinner" | "snack"
+  date          String     // "YYYY-MM-DD"
+  time          String     // "HH:mm"
+  totalCalories Int        @default(0)
+  
+  foodItems     FoodItem[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([userId, date])
+}
+
+model FoodItem {
+  id             String   @id @default(uuid())
+  mealId         String
+  meal           Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  
+  name           String
+  vietnameseName String?
+  calories       Int
+  protein        Float    @default(0)
+  carbs          Float    @default(0)
+  fat            Float    @default(0)
+  fiber          Float    @default(0)
+  sodium         Float    @default(0)
+  portionSize    Float    @default(100)
+  portionUnit    String   @default("1 phần")
+  healthScore    Int?     @default(85)
+  notes          String?
+  imageUrl       String?
+  
+  createdAt      DateTime @default(now())
+}
+
+model ScannedFoodLog {
+  id             String   @id @default(uuid())
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  foodName       String
+  vietnameseName String?
+  mealType       String?  @default("lunch")
+  calories       Int
+  protein        Float    @default(0)
+  carbs          Float    @default(0)
+  fat            Float    @default(0)
+  confidence     Float    @default(0.92)
+  healthScore    Int?     @default(85)
+  imageUrl       String?
+  detectedItems  String?  // JSON formatted list
+  
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String?  // null means broadcast to all users
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title      String
+  message    String
+  type       String   @default("info") // "info" | "water" | "meal" | "promo" | "warning"
+  actionUrl  String?
+  dataJson   String?  // Metadata JSON
+  isRead     Boolean  @default(false)
+  sentBy     String   @default("admin")
+  
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model WaterLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  date      String   // "YYYY-MM-DD"
+  amountMl  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model WaterReminderConfig {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  enabled      Boolean  @default(true)
+  startTime    String   @default("07:00")
+  endTime      String   @default("21:30")
+  dailyGoal    Int      @default(2000)
+  cupSize      Int      @default(250)
+  soundEnabled Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
