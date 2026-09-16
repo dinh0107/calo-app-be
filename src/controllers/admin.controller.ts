@@ -380,3 +380,16 @@ export async function clearAllData(req: Request, res: Response): Promise<void> {
     res.status(500).json({ success: false, message: 'Lỗi khi xóa dữ liệu.' });
   }
 }
+
+/** CI/CD: FTP xong gọi endpoint này — process exit, PM2 autorestart load code mới */
+export async function reloadApp(req: Request, res: Response): Promise<void> {
+  const expected = process.env.DEPLOY_SECRET;
+  const got = req.get('x-deploy-secret') || '';
+  if (!expected || got !== expected) {
+    res.status(401).json({ success: false, message: 'Unauthorized' });
+    return;
+  }
+
+  res.json({ success: true, message: 'Restarting via PM2…' });
+  setTimeout(() => process.exit(0), 400);
+}

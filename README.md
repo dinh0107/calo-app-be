@@ -42,29 +42,30 @@ Server sẽ chạy tại: `http://localhost:5001`
 
 ---
 
-## 🔄 CI/CD (GitHub Actions)
+## 🔄 CI/CD (GitHub Actions + FTP)
 
-- **CI** (`.github/workflows/ci.yml`): mỗi push/PR vào `main` → `npm ci` + `tsc` build.
-- **CD** (`.github/workflows/deploy.yml`): push `main` → SSH vào VPS → `git pull` + build + `pm2 restart`.
+- **CI** (`.github/workflows/ci.yml`): push/PR `main` → build.
+- **CD** (`.github/workflows/deploy.yml`): push `main` → **FTP upload** + gọi webhook restart PM2.
 
-### Bật auto-deploy
-1. Trên VPS: clone repo vào `httpdocs` (hoặc path deploy), cài PM2 như đã setup.
-2. GitHub repo → **Settings → Secrets and variables → Actions** thêm:
+### Secrets (GitHub → Settings → Secrets → Actions)
 
 | Secret | Ví dụ |
 |--------|--------|
-| `VPS_HOST` | `203.162.13.35` hoặc IP VPS |
-| `VPS_USER` | `Administrator` |
-| `VPS_SSH_KEY` | private key (nội dung file `.pem` / `id_rsa`) |
-| `DEPLOY_PATH` | `C:\inetpub\vhosts\giahomnay.site\httpdocs` |
+| `FTP_SERVER` | `giahomnay.site` hoặc IP |
+| `FTP_USERNAME` | user FTP Plesk |
+| `FTP_PASSWORD` | mật khẩu FTP |
+| `FTP_SERVER_DIR` | `httpdocs` (hoặc `/` nếu FTP đã chroot vào httpdocs) |
+| `APP_URL` | `http://giahomnay.site` |
+| `DEPLOY_SECRET` | cùng giá trị với `.env` trên VPS |
 
-> SSH port mặc định `22`. Đổi trong `.github/workflows/deploy.yml` nếu VPS dùng port khác.
+### Trên VPS (một lần)
+1. PM2 đang chạy (`pm2 status` có `calovision`)
+2. Trong `.env` thêm: `DEPLOY_SECRET=...` (trùng secret GitHub)
+3. `npm run build` + `pm2 restart calovision` lần đầu sau khi có endpoint `/api/admin/reload`
 
-3. Trên VPS bật **OpenSSH Server**, thêm public key vào `authorized_keys` của user deploy.
-4. VPS phải có **git clone** repo trong `DEPLOY_PATH` (không chỉ upload zip).
-5. Push lên `main` → Actions chạy CI + Deploy.
+> Đổi `package.json` (dependency mới): RDP một lần `npm ci` trong `httpdocs` (FTP không upload `node_modules`).
 
-Manual trên VPS: `powershell -File .\deploy-remote.ps1`
+Push `main` → Actions deploy FTP → site tự reload.
 
 ---
 

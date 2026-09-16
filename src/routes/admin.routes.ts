@@ -7,6 +7,7 @@ import {
   createAdminNotification,
   deleteAdminNotification,
   clearAllData,
+  reloadApp,
 } from '../controllers/admin.controller.js';
 
 const router = Router();
@@ -27,5 +28,8 @@ router.delete('/notifications/:id', deleteAdminNotification);
 
 // Clean Database Wiping
 router.delete('/clean-all', clearAllData);
+
+// CI/CD reload (FTP deploy webhook)
+router.post('/reload', reloadApp);
 
 export default router;
