@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { getJwtSecret } from './lib/auth-secret.js';
+import { ensureDefaultAdmin } from './lib/ensure-admin.js';
 import authRoutes from './routes/auth.routes.js';
 import mealsRoutes from './routes/meals.routes.js';
 import visionRoutes from './routes/vision.routes.js';
@@ -87,11 +88,19 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🚀 CaloVision AI Backend Server is running!`);
-  console.log(`📡 API URL: http://localhost:${PORT}`);
-  console.log(`📊 Admin Portal: http://localhost:${PORT}/admin`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`====================================================`);
+async function start() {
+  await ensureDefaultAdmin();
+  app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`CaloVision AI Backend Server is running!`);
+    console.log(`API URL: http://localhost:${PORT}`);
+    console.log(`Admin Portal: http://localhost:${PORT}/admin`);
+    console.log(`Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`====================================================`);
+  });
+}
+
+start().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
