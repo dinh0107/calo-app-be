@@ -26,5 +26,5 @@ if (-not (Test-Path "dist\index.js")) {
 }
 
 Write-Host ""
-Write-Host "OK. In Plesk Node.js: set startup file = dist/index.js, then Enable/Restart App."
+Write-Host "OK. In Plesk Node.js: set startup file = app.js, then Enable/Restart App."
 Write-Host "Health: /api/health   Admin: /admin"

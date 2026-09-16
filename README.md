@@ -80,7 +80,7 @@ GEMINI_API_KEY=<your-key>
 | Node.js version | ≥ 18 |
 | Application mode | `production` |
 | Application root | thư mục chứa `package.json` (vd. `/httpdocs`) |
-| Application startup file | `dist/index.js` |
+| Application startup file | `app.js` |
 | Application URL | `/` |
 
 Custom environment variables (nếu không dùng file `.env`): `NODE_ENV`, `JWT_SECRET`, `DATABASE_URL`, `GEMINI_API_KEY`.
