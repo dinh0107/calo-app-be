@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'calovision_super_secure_jwt_secret_key_2026_fitness_app';
 
@@ -39,4 +40,32 @@ export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction
     }
   }
   next();
+}
+
+/** JWT + role admin (DB) */
+export async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ success: false, message: 'Yêu cầu đăng nhập admin.' });
+    return;
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, email: true, role: true },
+    });
+
+    if (!user || user.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Tài khoản không có quyền admin.' });
+      return;
+    }
+
+    req.user = { id: user.id, email: user.email };
+    next();
+  } catch {
+    res.status(401).json({ success: false, message: 'Phiên đăng nhập đã hết hạn hoặc không hợp lệ.' });
+  }
 }

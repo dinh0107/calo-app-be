@@ -81,6 +81,36 @@
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
 
+  <!-- LOGIN GATE -->
+  <div id="login-gate" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#090d16]/95 backdrop-blur-sm">
+    <form id="login-form" class="w-full max-w-md glass-card rounded-2xl p-8 space-y-5 border border-white/10 shadow-2xl">
+      <div class="text-center space-y-1">
+        <p class="text-xs font-bold tracking-widest text-brand-400 uppercase">CaloVision</p>
+        <h1 class="text-2xl font-extrabold text-white">Admin Login</h1>
+        <p class="text-sm text-gray-400">Chỉ tài khoản role <span class="text-brand-400 font-semibold">admin</span></p>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5">Email</label>
+        <input id="login-email" type="email" required autocomplete="username"
+          class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm focus:outline-none focus:border-brand-500/50"
+          placeholder="admin@example.com">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1.5">Mật khẩu</label>
+        <input id="login-password" type="password" required autocomplete="current-password"
+          class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-sm focus:outline-none focus:border-brand-500/50"
+          placeholder="••••••••">
+      </div>
+      <p id="login-error" class="hidden text-sm text-rose-400"></p>
+      <button type="submit" id="login-submit"
+        class="w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-black font-bold text-sm transition">
+        Đăng nhập
+      </button>
+    </form>
+  </div>
+
+  <div id="app-shell" class="hidden min-h-screen flex flex-col">
+
   <!-- ================= TOP NAVIGATION BAR ================= -->
   <header class="sticky top-0 z-50 glass-card border-b border-white/10 px-6 py-3.5 flex items-center justify-between">
     <div class="flex items-center gap-3">
@@ -110,6 +140,11 @@
       <button onclick="refreshAllData()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-medium transition">
         <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
         <span>Làm mới</span>
+      </button>
+
+      <button type="button" onclick="adminLogout()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-medium transition">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+        <span>Đăng xuất</span>
       </button>
     </div>
   </header>
@@ -508,7 +543,7 @@
 
     async function loadStats() {
       try {
-        const res = await fetch('/api/admin/stats');
+        const res = await apiFetch('/api/admin/stats');
         const data = await res.json();
         if (data.success) {
           const m = data.data.metrics;
@@ -617,7 +652,7 @@
 
     async function loadUsers() {
       try {
-        const res = await fetch('/api/admin/users');
+        const res = await apiFetch('/api/admin/users');
         const data = await res.json();
         if (data.success) {
           allUsers = data.data.users;
@@ -686,7 +721,7 @@
 
     async function loadScans() {
       try {
-        const res = await fetch('/api/admin/scans');
+        const res = await apiFetch('/api/admin/scans');
         const data = await res.json();
         if (data.success) {
           allScans = data.data.scans;
@@ -754,7 +789,7 @@
 
     async function loadNotifications() {
       try {
-        const res = await fetch('/api/admin/notifications');
+        const res = await apiFetch('/api/admin/notifications');
         const data = await res.json();
         if (data.success) {
           const tbody = document.getElementById('notifications-history-tbody');
@@ -851,7 +886,7 @@
       btn.innerHTML = '<span class="animate-spin">⏳</span> Đang gửi...';
 
       try {
-        const res = await fetch('/api/admin/notifications', {
+        const res = await apiFetch('/api/admin/notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -882,7 +917,7 @@
     async function deleteNotification(id) {
       if (!confirm('Bạn có chắc muốn xóa thông báo này?')) return;
       try {
-        const res = await fetch(`/api/admin/notifications/${id}`, { method: 'DELETE' });
+        const res = await apiFetch(`/api/admin/notifications/${id}`, { method: 'DELETE' });
         const data = await res.json();
         if (data.success) {
           showToast('Đã xóa', 'Thông báo đã được thu hồi.');
@@ -896,7 +931,7 @@
     async function cleanAllData() {
       if (!confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu trên database để reset về trạng thái trắng tinh không?')) return;
       try {
-        const res = await fetch('/api/admin/clean-all', { method: 'DELETE' });
+        const res = await apiFetch('/api/admin/clean-all', { method: 'DELETE' });
         const data = await res.json();
         if (data.success) {
           showToast('Đã làm sạch', 'Cơ sở dữ liệu đã được xóa trắng hoàn toàn!');
@@ -923,12 +958,123 @@
       navigator.clipboard.writeText(url).catch(() => {});
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    const ADMIN_TOKEN_KEY = 'calovision_admin_token';
+
+    function getAdminToken() {
+      return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
+    }
+
+    function setAdminToken(token) {
+      localStorage.setItem(ADMIN_TOKEN_KEY, token);
+    }
+
+    function clearAdminToken() {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+    }
+
+    async function apiFetch(url, options = {}) {
+      const headers = new Headers(options.headers || {});
+      const token = getAdminToken();
+      if (token) headers.set('Authorization', `Bearer ${token}`);
+      if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401 || res.status === 403) {
+        showLoginGate(res.status === 403 ? 'Tài khoản không có quyền admin.' : 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+      }
+      return res;
+    }
+
+    function showLoginGate(errorMsg) {
+      clearAdminToken();
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('login-gate').classList.remove('hidden');
+      const err = document.getElementById('login-error');
+      if (errorMsg) {
+        err.textContent = errorMsg;
+        err.classList.remove('hidden');
+      } else {
+        err.classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function showAppShell() {
+      document.getElementById('login-gate').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
       const label = document.getElementById('api-base-url-label');
       if (label) label.textContent = window.location.origin + '/api';
       lucide.createIcons();
       refreshAllData();
+    }
+
+    function adminLogout() {
+      clearAdminToken();
+      showLoginGate();
+    }
+
+    async function tryRestoreSession() {
+      const token = getAdminToken();
+      if (!token) {
+        showLoginGate();
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.data?.role === 'admin') {
+          showAppShell();
+        } else {
+          showLoginGate(data.message || 'Cần tài khoản admin.');
+        }
+      } catch {
+        showLoginGate('Không kết nối được máy chủ.');
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('login-submit');
+      const err = document.getElementById('login-error');
+      btn.disabled = true;
+      err.classList.add('hidden');
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!data.success || !data.data?.token) {
+          err.textContent = data.message || 'Đăng nhập thất bại.';
+          err.classList.remove('hidden');
+          return;
+        }
+        if (data.data.user?.role !== 'admin') {
+          err.textContent = 'Tài khoản này không phải admin.';
+          err.classList.remove('hidden');
+          return;
+        }
+        setAdminToken(data.data.token);
+        showAppShell();
+      } catch {
+        err.textContent = 'Không kết nối được máy chủ.';
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      tryRestoreSession();
     });
   </script>
+  </div><!-- #app-shell -->
 </body>
 </html>

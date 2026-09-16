@@ -9,27 +9,22 @@ import {
   clearAllData,
   reloadApp,
 } from '../controllers/admin.controller.js';
+import { requireAdmin } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Stats & Overview
+// CI/CD reload — bảo vệ bằng DEPLOY_SECRET, không dùng JWT admin
+router.post('/reload', reloadApp);
+
+// Mọi API admin còn lại bắt buộc đăng nhập role=admin
+router.use(requireAdmin);
+
 router.get('/stats', getAdminStats);
-
-// Users Management
 router.get('/users', getAdminUsers);
-
-// Scans Gallery & History
 router.get('/scans', getAdminScans);
-
-// Notifications Broadcaster
 router.get('/notifications', getAdminNotifications);
 router.post('/notifications', createAdminNotification);
 router.delete('/notifications/:id', deleteAdminNotification);
-
-// Clean Database Wiping
 router.delete('/clean-all', clearAllData);
-
-// CI/CD reload (FTP deploy webhook)
-router.post('/reload', reloadApp);
 
 export default router;
