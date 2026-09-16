@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { getJwtSecret } from './lib/auth-secret.js';
 import authRoutes from './routes/auth.routes.js';
 import mealsRoutes from './routes/meals.routes.js';
 import visionRoutes from './routes/vision.routes.js';
@@ -12,6 +13,9 @@ import waterRoutes from './routes/water.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
+
+// Fail fast nếu production thiếu JWT_SECRET
+getJwtSecret();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

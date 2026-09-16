@@ -3,11 +3,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import type { AuthRequest } from '../middlewares/auth.middleware.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'calovision_super_secure_jwt_secret_key_2026_fitness_app';
+import { getJwtSecret } from '../lib/auth-secret.js';
 
 function generateToken(user: { id: string; email: string }): string {
-  return jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+  return jwt.sign({ id: user.id, email: user.email }, getJwtSecret(), { expiresIn: '30d' });
 }
 
 export async function register(req: Request, res: Response): Promise<void> {

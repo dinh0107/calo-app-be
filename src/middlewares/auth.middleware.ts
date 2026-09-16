@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'calovision_super_secure_jwt_secret_key_2026_fitness_app';
+import { getJwtSecret } from '../lib/auth-secret.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -20,7 +19,7 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: string; email: string };
     req.user = decoded;
     next();
   } catch {
@@ -33,7 +32,7 @@ export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+      const decoded = jwt.verify(token, getJwtSecret()) as { id: string; email: string };
       req.user = decoded;
     } catch {
       // Ignore invalid token for optional auth
@@ -42,7 +41,7 @@ export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction
   next();
 }
 
-/** JWT + role admin (DB) */
+/** JWT hợp lệ + role=admin trong DB (không tin role trên client) */
 export async function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -52,7 +51,7 @@ export async function requireAdmin(req: AuthRequest, res: Response, next: NextFu
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: string; email: string };
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { id: true, email: true, role: true },
