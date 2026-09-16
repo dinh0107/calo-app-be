@@ -1,0 +1,451 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CaloVision AI API",
+    "description": "Backend REST API cho CaloVision AI Nutrition App",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "/api", "description": "Relative (cùng host)" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Health" },
+    { "name": "Auth" },
+    { "name": "Meals" },
+    { "name": "Vision" },
+    { "name": "Water" },
+    { "name": "Analytics" },
+    { "name": "Notifications" },
+    { "name": "Admin" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Server online",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "apiBaseUrl": { "type": "string" },
+                    "adminDashboard": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Đăng ký",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "OK" },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Đăng nhập",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK — trả JWT trong data.token" },
+          "401": { "description": "Sai thông tin" }
+        }
+      }
+    },
+    "/auth/google": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Đăng nhập Google",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "idToken": { "type": "string" },
+                  "email": { "type": "string" },
+                  "name": { "type": "string" },
+                  "googleId": { "type": "string" },
+                  "avatarUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Profile hiện tại",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/auth/profile": {
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Cập nhật profile / onboarding",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gender": { "type": "string" },
+                  "weight": { "type": "number" },
+                  "height": { "type": "number" },
+                  "age": { "type": "integer" },
+                  "activityLevel": { "type": "string" },
+                  "goal": { "type": "string" },
+                  "targetCalories": { "type": "integer" },
+                  "targetProtein": { "type": "integer" },
+                  "targetCarbs": { "type": "integer" },
+                  "targetFat": { "type": "integer" },
+                  "waterGoal": { "type": "integer" },
+                  "hasCompletedOnboarding": { "type": "boolean" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/meals": {
+      "get": {
+        "tags": ["Meals"],
+        "summary": "Lấy meals theo ngày",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "date", "in": "query", "schema": { "type": "string", "example": "2026-09-16" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Meals"],
+        "summary": "Thêm meal",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mealType": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"] },
+                  "date": { "type": "string" },
+                  "time": { "type": "string" },
+                  "food": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/meals/all": {
+      "delete": {
+        "tags": ["Meals"],
+        "summary": "Xóa tất cả meals",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/meals/{id}": {
+      "delete": {
+        "tags": ["Meals"],
+        "summary": "Xóa meal theo id",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/meals/{id}/duplicate": {
+      "post": {
+        "tags": ["Meals"],
+        "summary": "Duplicate meal",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/vision/analyze": {
+      "post": {
+        "tags": ["Vision"],
+        "summary": "Phân tích ảnh món ăn (Gemini)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["imageBase64"],
+                "properties": {
+                  "imageBase64": { "type": "string", "description": "Base64 image (không cần prefix data:)" },
+                  "mimeType": { "type": "string", "example": "image/jpeg" },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/water/log": {
+      "get": {
+        "tags": ["Water"],
+        "summary": "Lấy water log",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "date", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Water"],
+        "summary": "Ghi / cộng nước",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string" },
+                  "amountMl": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/water/reset": {
+      "post": {
+        "tags": ["Water"],
+        "summary": "Reset nước trong ngày",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/water/reminder-config": {
+      "get": {
+        "tags": ["Water"],
+        "summary": "Lấy reminder config",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "put": {
+        "tags": ["Water"],
+        "summary": "Cập nhật reminder config",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": { "type": "boolean" },
+                  "startTime": { "type": "string" },
+                  "endTime": { "type": "string" },
+                  "dailyGoal": { "type": "integer" },
+                  "cupSize": { "type": "integer" },
+                  "soundEnabled": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/analytics/trends": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Trends analytics",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "days", "in": "query", "schema": { "type": "integer", "example": 7 } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Danh sách thông báo user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/notifications/{id}/read": {
+      "put": {
+        "tags": ["Notifications"],
+        "summary": "Đánh dấu đã đọc",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/notifications/read-all": {
+      "put": {
+        "tags": ["Notifications"],
+        "summary": "Đánh dấu đọc tất cả",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/notifications/register-push": {
+      "post": {
+        "tags": ["Notifications"],
+        "summary": "Đăng ký push token",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pushToken": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/admin/stats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Admin stats",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Danh sách users",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/admin/scans": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Lịch sử scan",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/admin/notifications": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Admin notifications",
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Tạo / broadcast notification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "message": { "type": "string" },
+                  "type": { "type": "string" },
+                  "userId": { "type": "string", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/admin/notifications/{id}": {
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Xóa notification",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/admin/clean-all": {
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Xóa sạch dữ liệu (danger)",
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}

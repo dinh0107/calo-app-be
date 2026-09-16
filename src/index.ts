@@ -35,16 +35,27 @@ app.get('/admin', (_req: Request, res: Response) => {
 });
 
 // Health Check Endpoint
-app.get('/api/health', (_req: Request, res: Response) => {
+app.get('/api/health', (req: Request, res: Response) => {
+  const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${PORT}`;
+  const proto = (req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
+  const base = `${proto}://${host}`;
   res.json({
     status: 'online',
     app: 'CaloVision AI Backend Server',
     version: '1.0.0',
-    adminDashboard: `http://localhost:${PORT}/admin`,
+    apiBaseUrl: `${base}/api`,
+    adminDashboard: `${base}/admin`,
+    swagger: `${base}/api-docs`,
     timestamp: new Date().toISOString(),
   });
 });
 
+app.get('/api-docs', (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, 'swagger.html'));
+});
+app.get('/swagger', (_req: Request, res: Response) => {
+  res.redirect('/api-docs');
+});
 // Mount API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/meals', mealsRoutes);
