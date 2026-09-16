@@ -2,11 +2,10 @@
 # Run as Administrator:
 #   powershell -ExecutionPolicy Bypass -File .\pm2-setup.ps1
 
-$ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 Write-Host "==> Stop manual node processes"
-Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
 Write-Host "==> Install pm2 globally"
 npm install -g pm2
@@ -19,17 +18,20 @@ if (-not (Test-Path "dist\index.js")) {
 }
 
 if (-not (Test-Path "ecosystem.config.cjs")) {
-  Write-Error "Missing ecosystem.config.cjs"
+  Write-Host "Missing ecosystem.config.cjs"
+  exit 1
 }
 
 Write-Host "==> Start app with PM2"
-pm2 delete calovision 2>$null
+# delete may fail if not exists - ignore
+cmd /c "pm2 delete calovision >nul 2>&1"
 pm2 start ecosystem.config.cjs
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "pm2 start failed"
+  exit $LASTEXITCODE
+}
 
 pm2 save
-
-Write-Host "==> Enable PM2 on Windows startup"
 pm2 startup
 
 Write-Host ""
