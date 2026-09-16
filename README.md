@@ -42,6 +42,32 @@ Server sẽ chạy tại: `http://localhost:5001`
 
 ---
 
+## 🔄 CI/CD (GitHub Actions)
+
+- **CI** (`.github/workflows/ci.yml`): mỗi push/PR vào `main` → `npm ci` + `tsc` build.
+- **CD** (`.github/workflows/deploy.yml`): push `main` → SSH vào VPS → `git pull` + build + `pm2 restart`.
+
+### Bật auto-deploy
+1. Trên VPS: clone repo vào `httpdocs` (hoặc path deploy), cài PM2 như đã setup.
+2. GitHub repo → **Settings → Secrets and variables → Actions** thêm:
+
+| Secret | Ví dụ |
+|--------|--------|
+| `VPS_HOST` | `203.162.13.35` hoặc IP VPS |
+| `VPS_USER` | `Administrator` |
+| `VPS_SSH_KEY` | private key (nội dung file `.pem` / `id_rsa`) |
+| `DEPLOY_PATH` | `C:\inetpub\vhosts\giahomnay.site\httpdocs` |
+
+> SSH port mặc định `22`. Đổi trong `.github/workflows/deploy.yml` nếu VPS dùng port khác.
+
+3. Trên VPS bật **OpenSSH Server**, thêm public key vào `authorized_keys` của user deploy.
+4. VPS phải có **git clone** repo trong `DEPLOY_PATH` (không chỉ upload zip).
+5. Push lên `main` → Actions chạy CI + Deploy.
+
+Manual trên VPS: `powershell -File .\deploy-remote.ps1`
+
+---
+
 ## 🖥️ Deploy lên Windows + Plesk (Node.js)
 
 ### Yêu cầu trên host
